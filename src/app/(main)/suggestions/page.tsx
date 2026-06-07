@@ -43,7 +43,7 @@ export default function SuggestionsPage() {
     setMatches(null);
     try {
       const url = process.env.NODE_ENV === 'development'
-        ? "http://127.0.0.1:5001/studio-590336739-604d3/us-central1/vibeMatcher"
+        ? "http://localhost:5001/studio-590336739-604d3/us-central1/vibeMatcher"
         : "https://us-central1-studio-590336739-604d3.cloudfunctions.net/vibeMatcher";
       const res = await fetch(url, {
         method: "POST",
