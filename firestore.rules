@@ -1,0 +1,125 @@
+/**
+ * @fileoverview Firestore Security Rules for CineStash.
+ *
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model for all data. Each user has their own private data tree,
+ * accessible only to them. All data is nested under /users/{userId}, ensuring clear ownership. Guest users are supported.
+ *
+ * Data Structure:
+ * - /users/{userId}: Stores user profile information.
+ * - /users/{userId}/movies/{movieId}: Stores movies associated with a specific user.
+ * - /users/{userId}/shows/{showId}: Stores TV shows associated with a specific user.
+ * - /users/{userId}/tags/{tagId}: Stores tags associated with a specific user.
+ *
+ * Key Security Decisions:
+ * - Users can only access their own data.
+ * - Listing other users is disallowed.
+ * - All data is private and requires authentication.
+ * - Guest users have the same level of data segregation.
+ *
+ * Denormalization for Authorization:
+ * - Each Movie, Show, and Tag document includes a `userId` field that MUST match the `userId` in the path.
+ *   This denormalization allows for efficient authorization checks without additional reads.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Enforces access control for user profiles.
+     * @path /users/{userId}
+     * @allow (create) - Authenticated user can create their own profile if the userId matches their auth.uid.
+     * @allow (get, update, delete) - Authenticated user can only access their own profile.
+     * @deny (list) - Listing users is not allowed.
+     * @deny (create) - Cannot create a user with a different userId.
+     * @deny (update, delete) - Cannot update or delete a user profile if not the owner.
+     * @principle Enforces document ownership and prevents unauthorized access to user data.
+     */
+    match /users/{userId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+      function isOwner(userId) {
+        return isSignedIn() && request.auth.uid == userId;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) && resource != null;
+      allow delete: if isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Enforces access control for movies under a user's profile.
+     * @path /users/{userId}/movies/{movieId}
+     * @allow (create) - Authenticated user can create a movie under their profile if the userId matches.
+     * @allow (get, list, update, delete) - Authenticated user can only access their own movies.
+     * @deny (create) - Cannot create a movie under a different user's profile.
+     * @deny (update, delete) - Cannot update or delete a movie if not the owner.
+     * @principle Enforces document ownership and prevents unauthorized access to movie data.
+     */
+    match /users/{userId}/movies/{movieId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+      function isOwner(userId) {
+        return isSignedIn() && request.auth.uid == userId;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isOwner(userId) && resource != null && request.resource.data.userId == resource.data.userId;
+      allow delete: if isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Enforces access control for shows under a user's profile.
+     * @path /users/{userId}/shows/{showId}
+     * @allow (create) - Authenticated user can create a show under their profile if the userId matches.
+     * @allow (get, list, update, delete) - Authenticated user can only access their own shows.
+     * @deny (create) - Cannot create a show under a different user's profile.
+     * @deny (update, delete) - Cannot update or delete a show if not the owner.
+     * @principle Enforces document ownership and prevents unauthorized access to show data.
+     */
+    match /users/{userId}/shows/{showId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+      function isOwner(userId) {
+        return isSignedIn() && request.auth.uid == userId;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isOwner(userId) && resource != null && request.resource.data.userId == resource.data.userId;
+      allow delete: if isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Enforces access control for tags under a user's profile.
+     * @path /users/{userId}/tags/{tagId}
+     * @allow (create) - Authenticated user can create a tag under their profile if the userId matches.
+     * @allow (get, list, update, delete) - Authenticated user can only access their own tags.
+     * @deny (create) - Cannot create a tag under a different user's profile.
+     * @deny (update, delete) - Cannot update or delete a tag if not the owner.
+     * @principle Enforces document ownership and prevents unauthorized access to tag data.
+     */
+    match /users/{userId}/tags/{tagId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+      function isOwner(userId) {
+        return isSignedIn() && request.auth.uid == userId;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isOwner(userId) && resource != null && request.resource.data.userId == resource.data.userId;
+      allow delete: if isOwner(userId) && resource != null;
+    }
+  }
+}

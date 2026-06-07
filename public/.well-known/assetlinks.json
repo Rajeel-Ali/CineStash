@@ -1,0 +1,15 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls",
+      "delegate_permission/common.get_login_creds"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "me.rajeel.app.twa",
+      "sha256_cert_fingerprints": [
+        "21:10:9A:BA:AB:EC:68:FB:F7:07:9D:DD:E8:28:D8:35:BD:FF:3F:A1:76:DC:2E:BC:B8:30:A2:91:41:AC:A4:6B"
+      ]
+    }
+  }
+]
